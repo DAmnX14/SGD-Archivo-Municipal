@@ -780,8 +780,31 @@ def limpiar_temporales():
             pass
 
 
+def _registro_autoprueba():
+    """En modo --autoprueba vuelca todo (pasos, excepciones, pilas colgadas) a un log."""
+    import faulthandler
+    os.makedirs(dbm.DATA_DIR, exist_ok=True)
+    log = open(os.path.join(dbm.DATA_DIR, "autoprueba.log"), "a", encoding="utf-8", buffering=1)
+    sys.stdout = sys.stderr = log
+    faulthandler.enable(log)
+    faulthandler.dump_traceback_later(90, repeat=True, file=log)
+    sys.excepthook = lambda t, v, tb: traceback.print_exception(t, v, tb, file=log)
+    threading.excepthook = lambda a: traceback.print_exception(a.exc_type, a.exc_value, a.exc_traceback, file=log)
+    import logging
+    logging.basicConfig(stream=log, level=logging.DEBUG, force=True)
+
+
+def paso(msg):
+    if "--autoprueba" in sys.argv:
+        print(f"[{datetime.now():%H:%M:%S}] {msg}", flush=True)
+
+
 def main():
+    if "--autoprueba" in sys.argv:
+        _registro_autoprueba()
+    paso(f"inicio frozen={getattr(sys, 'frozen', False)} webview={webview is not None}")
     dbm.inicializar()
+    paso("base de datos lista")
     limpiar_temporales()
     api = Api()
     modo_navegador = "--navegador" in sys.argv or webview is None
@@ -809,12 +832,15 @@ def main():
         def autoprueba(win):
             resultado = {"ok": False}
             try:
+                paso("esperando evento loaded")
                 win.events.loaded.wait(60)
+                paso("loaded recibido")
                 js = ("JSON.stringify({titulo: document.title, vista: document.querySelector('#titulo-vista').textContent,"
                       " total: document.querySelector('#ini-total').textContent,"
                       " puente: !!(window.pywebview && window.pywebview.api)})")
                 for _ in range(40):  # hasta 20 s para que el dashboard cargue datos
                     datos = json.loads(win.evaluate_js(js))
+                    paso(f"interfaz: {datos}")
                     if datos["puente"] and datos["total"] not in ("", "0"):
                         break
                     threading.Event().wait(0.5)
@@ -822,20 +848,29 @@ def main():
                              "interfaz": datos, "escaner": scn.estado_escaner()}
             except Exception as e:  # noqa: BLE001
                 resultado["error"] = repr(e)
+            paso(f"resultado: {resultado}")
             with open(os.path.join(dbm.DATA_DIR, "autoprueba.json"), "w", encoding="utf-8") as fh:
                 json.dump(resultado, fh, ensure_ascii=False, indent=2)
             win.destroy()
         opciones["func"], opciones["args"] = autoprueba, (ventana,)
     if os.path.exists(LOGO_PNG):
         opciones["icon"] = LOGO_PNG  # GTK/Qt; en Windows se usa el ícono del .exe
+    paso(f"webview.start {getattr(webview, '__version__', '')}")
     try:
         webview.start(**opciones)
     except TypeError:  # versiones de pywebview sin parámetro icon
         opciones.pop("icon", None)
         webview.start(**opciones)
+    paso("ventana cerrada")
     servidor.shutdown()
     limpiar_temporales()
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except Exception:
+        if "--autoprueba" not in sys.argv:
+            raise
+        traceback.print_exc()
+        sys.exit(1)

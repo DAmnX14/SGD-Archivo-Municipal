@@ -41,20 +41,53 @@ jobs:
           --hidden-import pythoncom --hidden-import pywintypes --hidden-import win32com.client
           --collect-data reportlab app.py
 
+      - name: Autoprueba desde el código fuente
+        shell: pwsh
+        run: |
+          $env:SGD_DATOS = Join-Path $env:RUNNER_TEMP "sgd_src"
+          $p = Start-Process -FilePath python -ArgumentList "app.py","--autoprueba" -PassThru
+          $fin = $p.WaitForExit(150000)
+          if (-not $fin) { $p.Kill() }
+          Get-Content (Join-Path $env:SGD_DATOS "autoprueba.log") -ErrorAction SilentlyContinue | Select-Object -Last 120
+          $json = Join-Path $env:SGD_DATOS "autoprueba.json"
+          if (-not $fin -or -not (Test-Path $json)) { throw "La autoprueba desde el código no terminó" }
+          Get-Content $json -Raw
+          if (-not (Get-Content $json -Raw | ConvertFrom-Json).ok) { throw "La autoprueba desde el código falló" }
+
       - name: Autoprueba del .exe (ventana WebView2 real)
         shell: pwsh
         run: |
           $env:SGD_DATOS = Join-Path $env:RUNNER_TEMP "sgd_datos"
           $p = Start-Process -FilePath "dist\SGD_Archivo_Municipal.exe" -ArgumentList "--autoprueba" -PassThru
-          if (-not $p.WaitForExit(240000)) { $p.Kill(); throw "El ejecutable no respondió en 4 minutos" }
+          $fin = $p.WaitForExit(180000)
+          if (-not $fin) {
+            Add-Type -AssemblyName System.Windows.Forms, System.Drawing
+            $b = [System.Windows.Forms.Screen]::PrimaryScreen.Bounds
+            $bmp = New-Object System.Drawing.Bitmap $b.Width, $b.Height
+            [System.Drawing.Graphics]::FromImage($bmp).CopyFromScreen($b.Location, [System.Drawing.Point]::Empty, $b.Size)
+            $bmp.Save("pantalla_autoprueba.png")
+            $p.Kill()
+          }
+          Get-Content (Join-Path $env:SGD_DATOS "autoprueba.log") -ErrorAction SilentlyContinue | Select-Object -Last 120
           $json = Join-Path $env:SGD_DATOS "autoprueba.json"
-          if (-not (Test-Path $json)) { throw "No se generó autoprueba.json" }
+          if (-not $fin -or -not (Test-Path $json)) { throw "El ejecutable no completó la autoprueba" }
           Get-Content $json -Raw
-          $r = Get-Content $json -Raw | ConvertFrom-Json
-          if (-not $r.ok) { throw "La autoprueba de la interfaz falló" }
-          Write-Host "Documentos en base de datos de ejemplo:" (Get-ChildItem (Join-Path $env:SGD_DATOS "repositorio_pdf") -Recurse -Filter *.pdf).Count
+          if (-not (Get-Content $json -Raw | ConvertFrom-Json).ok) { throw "La autoprueba de la interfaz falló" }
+          Write-Host "PDF de ejemplo generados:" (Get-ChildItem (Join-Path $env:SGD_DATOS "repositorio_pdf") -Recurse -Filter *.pdf).Count
+
+      - name: Guardar diagnóstico
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: diagnostico-autoprueba
+          path: |
+            pantalla_autoprueba.png
+            ${{ runner.temp }}/sgd_datos/autoprueba.log
+            ${{ runner.temp }}/sgd_src/autoprueba.log
+          if-no-files-found: ignore
 
       - name: Publicar ejecutable como artefacto
+        if: always() && hashFiles('dist/SGD_Archivo_Municipal.exe') != ''
         uses: actions/upload-artifact@v4
         with:
           name: SGD_Archivo_Municipal-exe
