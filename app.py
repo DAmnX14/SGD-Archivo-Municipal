@@ -853,8 +853,10 @@ def main():
                 json.dump(resultado, fh, ensure_ascii=False, indent=2)
             win.destroy()
         opciones["func"], opciones["args"] = autoprueba, (ventana,)
-    if os.path.exists(LOGO_PNG):
-        opciones["icon"] = LOGO_PNG  # GTK/Qt; en Windows se usa el ícono del .exe
+    # Windows (WinForms) exige un .ico; GTK/Qt aceptan PNG
+    icono = ICONO if sys.platform.startswith("win") else LOGO_PNG
+    if os.path.exists(icono):
+        opciones["icon"] = icono
     paso(f"webview.start {getattr(webview, '__version__', '')}")
     try:
         webview.start(**opciones)
