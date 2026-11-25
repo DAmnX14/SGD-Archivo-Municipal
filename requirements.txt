@@ -1,0 +1,8 @@
+# Sistema de Gestión Documental - Jefatura de Archivo (Python 3.11+ / Windows 10-11)
+pywebview>=5.3          # Ventana nativa (WebView2 / Edge Chromium en Windows)
+pypdf>=4.2              # Unión, rotación y lectura de páginas de PDF
+Pillow>=10.3            # Imágenes escaneadas -> PDF, cálculo de DPI
+openpyxl>=3.1           # Exportación real a Excel (.xlsx) con gráficos
+reportlab>=4.1          # Comprobantes y reportes PDF (código de barras + QR)
+pywin32>=306; sys_platform == "win32"   # Escaneo WIA (Windows Image Acquisition)
+pyinstaller>=6.6        # Sólo para generar el .exe

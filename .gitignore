@@ -1,0 +1,6 @@
+datos_sistema/
+node_modules/
+build/
+dist/
+*.spec
+__pycache__/

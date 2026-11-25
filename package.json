@@ -1,0 +1,13 @@
+{
+  "name": "sgd-archivo-assets",
+  "private": true,
+  "description": "Sólo para recompilar Tailwind / actualizar librerías JS (no requerido para ejecutar)",
+  "scripts": {
+    "css": "tailwindcss -i static/css/tailwind.src.css -o static/css/tailwind.css --minify"
+  },
+  "devDependencies": {
+    "chart.js": "^4.6.2",
+    "pdfjs-dist": "^3.11.174",
+    "tailwindcss": "^3.4.19"
+  }
+}

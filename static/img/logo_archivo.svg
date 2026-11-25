@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1A5BC4"/>
+      <stop offset="1" stop-color="#0A367A"/>
+    </linearGradient>
+  </defs>
+  <circle cx="128" cy="128" r="124" fill="url(#g)"/>
+  <circle cx="128" cy="128" r="112" fill="none" stroke="#FFFFFF" stroke-opacity=".85" stroke-width="5"/>
+  <!-- Edificio municipal al fondo -->
+  <g fill="#FFFFFF" fill-opacity=".22">
+    <path d="M58 96 L128 58 L198 96 Z"/>
+    <rect x="66" y="98" width="124" height="8"/>
+  </g>
+  <!-- Carpeta -->
+  <path d="M70 92 h38 l10 10 h68 a6 6 0 0 1 6 6 v62 a6 6 0 0 1 -6 6 H70 a6 6 0 0 1 -6 -6 V98 a6 6 0 0 1 6 -6 Z" fill="#F2C14E"/>
+  <path d="M64 114 h128 v56 a6 6 0 0 1 -6 6 H70 a6 6 0 0 1 -6 -6 Z" fill="#FFD772"/>
+  <!-- Columnas en la carpeta -->
+  <g fill="#0A367A">
+    <path d="M98 128 L128 116 L158 128 Z"/>
+    <rect x="100" y="130" width="56" height="4"/>
+    <rect x="104" y="136" width="6" height="24"/>
+    <rect x="117" y="136" width="6" height="24"/>
+    <rect x="133" y="136" width="6" height="24"/>
+    <rect x="146" y="136" width="6" height="24"/>
+    <rect x="98" y="161" width="60" height="5"/>
+  </g>
+  <!-- Escáner -->
+  <rect x="58" y="182" width="140" height="22" rx="6" fill="#FFFFFF"/>
+  <rect x="66" y="189" width="96" height="6" rx="3" fill="#0056D2"/>
+  <circle cx="182" cy="193" r="4" fill="#10B981"/>
+  <!-- Lupa -->
+  <circle cx="178" cy="138" r="20" fill="#FFFFFF" fill-opacity=".25" stroke="#FFFFFF" stroke-width="7"/>
+  <path d="M192 152 L210 170" stroke="#FFFFFF" stroke-width="10" stroke-linecap="round"/>
+</svg>

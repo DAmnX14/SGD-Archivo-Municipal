@@ -1,0 +1,67 @@
+name: Windows - pruebas y ejecutable
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Instalar dependencias
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt pytest
+
+      - name: Verificar WIA / pywin32
+        run: python -c "import scanner_utils as s; print(s.estado_escaner())"
+
+      - name: Pruebas del sistema
+        run: python -m pytest -v tests
+
+      - name: Compilar ejecutable (PyInstaller)
+        run: >
+          pyinstaller --noconfirm --onefile --windowed --name "SGD_Archivo_Municipal"
+          --icon "static\img\logo_archivo.ico"
+          --add-data "templates;templates" --add-data "static;static"
+          --hidden-import pythoncom --hidden-import pywintypes --hidden-import win32com.client
+          --collect-data reportlab app.py
+
+      - name: Autoprueba del .exe (ventana WebView2 real)
+        shell: pwsh
+        run: |
+          $env:SGD_DATOS = Join-Path $env:RUNNER_TEMP "sgd_datos"
+          $p = Start-Process -FilePath "dist\SGD_Archivo_Municipal.exe" -ArgumentList "--autoprueba" -PassThru
+          if (-not $p.WaitForExit(240000)) { $p.Kill(); throw "El ejecutable no respondió en 4 minutos" }
+          $json = Join-Path $env:SGD_DATOS "autoprueba.json"
+          if (-not (Test-Path $json)) { throw "No se generó autoprueba.json" }
+          Get-Content $json -Raw
+          $r = Get-Content $json -Raw | ConvertFrom-Json
+          if (-not $r.ok) { throw "La autoprueba de la interfaz falló" }
+          Write-Host "Documentos en base de datos de ejemplo:" (Get-ChildItem (Join-Path $env:SGD_DATOS "repositorio_pdf") -Recurse -Filter *.pdf).Count
+
+      - name: Publicar ejecutable como artefacto
+        uses: actions/upload-artifact@v4
+        with:
+          name: SGD_Archivo_Municipal-exe
+          path: dist/SGD_Archivo_Municipal.exe
+
+      - name: Crear Release (sólo al etiquetar vX.Y.Z)
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/SGD_Archivo_Municipal.exe

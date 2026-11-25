@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sistema de Gestión Documental - Jefatura de Archivo</title>
+  <link rel="icon" href="/static/img/logo_archivo.png">
+  <link rel="stylesheet" href="/static/css/tailwind.css">
+  <link rel="stylesheet" href="/static/css/app.css">
+</head>
+<body class="flex">
+
+<!-- ======================= SIDEBAR ======================= -->
+<aside class="sidebar relative w-64 flex-none h-screen flex flex-col text-white overflow-hidden select-none">
+  <div class="flex flex-col items-center text-center px-5 pt-7 pb-5">
+    <div class="logo-circ">
+      <img id="logo-img" src="/static/img/logo_archivo.png" alt="Logo" class="w-full h-full rounded-full"
+           onerror="this.replaceWith(Iconos.logoSVG())">
+    </div>
+    <div class="mt-3 text-[13px] font-semibold leading-snug text-blue-100">Municipalidad de<br>Libertador General San Martín</div>
+    <div class="mt-1 text-[11px] uppercase tracking-widest text-blue-300 font-semibold">Jefatura de Archivo</div>
+  </div>
+  <div class="mx-5 border-t border-white/10"></div>
+  <nav id="menu" class="flex flex-col gap-1 px-3 py-4 relative z-10">
+    <button class="nav-btn" data-vista="inicio"><i data-ico="home"></i>Inicio</button>
+    <button class="nav-btn" data-vista="escanear" data-roles="Administrador,Operador"><i data-ico="scan"></i>Escanear y Cargar</button>
+    <button class="nav-btn" data-vista="consultar"><i data-ico="search"></i>Consultar</button>
+    <button class="nav-btn" data-vista="reportes"><i data-ico="chart"></i>Reportes</button>
+    <button class="nav-btn" data-vista="configuracion" data-roles="Administrador,Operador"><i data-ico="settings"></i>Configuración</button>
+    <button class="nav-btn mt-2" id="btn-salir"><i data-ico="logout"></i>Salir</button>
+  </nav>
+  <!-- Silueta del edificio municipal -->
+  <svg class="edificio" viewBox="0 0 256 150" preserveAspectRatio="xMidYMax meet" fill="currentColor">
+    <rect x="118" y="6" width="20" height="26"/><path d="M114 8 L128 0 L142 8Z"/>
+    <path d="M30 60 L128 24 L226 60Z"/><rect x="34" y="60" width="188" height="8"/>
+    <g><rect x="44" y="72" width="10" height="56"/><rect x="66" y="72" width="10" height="56"/><rect x="88" y="72" width="10" height="56"/>
+      <rect x="110" y="72" width="10" height="56"/><rect x="136" y="72" width="10" height="56"/><rect x="158" y="72" width="10" height="56"/>
+      <rect x="180" y="72" width="10" height="56"/><rect x="202" y="72" width="10" height="56"/></g>
+    <rect x="4" y="96" width="32" height="34"/><rect x="220" y="96" width="32" height="34"/>
+    <rect x="24" y="128" width="208" height="8"/><rect x="0" y="136" width="256" height="14"/>
+  </svg>
+  <div class="mt-auto relative z-10 text-center text-[10px] text-blue-200/70 pb-3">SGD v1.0 · Uso interno</div>
+</aside>
+
+<!-- ======================= CONTENIDO ======================= -->
+<div class="flex-1 min-w-0 h-screen flex flex-col">
+  <header class="flex-none h-16 bg-surface border-b border-borde flex items-center px-7 gap-4 shadow-sm z-10">
+    <div>
+      <h1 id="titulo-vista" class="text-lg font-bold text-texto leading-tight">Inicio</h1>
+      <div id="subtitulo-vista" class="text-xs text-muted">Sistema de Gestión Documental</div>
+    </div>
+    <div class="ml-auto flex items-center gap-5 text-sm">
+      <button id="btn-tema" class="btn-ico" title="Cambiar Modo Claro / Oscuro"><i data-ico="moon"></i></button>
+      <div class="flex items-center gap-2 text-texto"><span class="w-8 h-8 rounded-full bg-marino text-white grid place-items-center"><i data-ico="user" class="w-4 h-4"></i></span>
+        <span>Usuario: <b id="hdr-usuario">Archivo</b></span></div>
+      <div class="flex items-center gap-2 text-texto"><i data-ico="calendar" class="w-5 h-5 text-vivo"></i><b id="hdr-fecha">--/--/----</b></div>
+    </div>
+  </header>
+
+  <main id="contenido" class="flex-1 overflow-auto p-6">
+
+  <!-- ===================== INICIO ===================== -->
+  <section id="vista-inicio" class="vista hidden space-y-5">
+    <div class="card relative overflow-hidden" style="background:linear-gradient(110deg,#0A367A 0%,#0056D2 100%);border:none">
+      <div class="p-6 text-white relative z-10 flex items-center gap-6">
+        <div class="flex-1">
+          <div class="text-blue-200 text-sm font-semibold">Bienvenido/a al</div>
+          <div class="text-2xl font-bold">Sistema de Gestión Documental</div>
+          <div class="text-blue-100 text-sm mt-1">Digitalice, clasifique y consulte el patrimonio documental de la Municipalidad.</div>
+        </div>
+        <button class="btn btn-lg bg-white text-marino hover:bg-blue-50" data-ir="escanear" data-roles="Administrador,Operador"><i data-ico="scan"></i>Digitalizar documento</button>
+      </div>
+    </div>
+    <div class="grid grid-cols-4 gap-5">
+      <div class="kpi"><div class="kpi-ico bg-blue-100 text-vivo"><i data-ico="files"></i></div><div><div class="kpi-val" id="ini-total">0</div><div class="kpi-lbl">Documentos digitalizados</div></div></div>
+      <div class="kpi"><div class="kpi-ico bg-emerald-100 text-exito"><i data-ico="upload"></i></div><div><div class="kpi-val" id="ini-mes">0</div><div class="kpi-lbl">Cargados este mes (<span id="ini-hoy">0</span> hoy)</div></div></div>
+      <div class="kpi"><div class="kpi-ico bg-violet-100 text-violet-600"><i data-ico="pages"></i></div><div><div class="kpi-val" id="ini-paginas">0</div><div class="kpi-lbl">Páginas archivadas</div></div></div>
+      <div class="kpi"><div class="kpi-ico bg-amber-100 text-amber-600"><i data-ico="database"></i></div><div><div class="kpi-val" id="ini-peso">0</div><div class="kpi-lbl">MB en repositorio</div></div></div>
+    </div>
+    <div class="grid grid-cols-3 gap-5">
+      <div class="card col-span-2">
+        <div class="card-header"><i data-ico="chart"></i>Documentos cargados - últimos 12 meses</div>
+        <div class="card-body h-72"><canvas id="ini-grafico"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-header"><i data-ico="bolt"></i>Accesos rápidos</div>
+        <div class="card-body grid grid-cols-2 gap-3">
+          <button class="btn btn-sec flex-col h-24" data-ir="escanear" data-roles="Administrador,Operador"><i data-ico="scan" class="!w-7 !h-7 text-vivo"></i>Escanear</button>
+          <button class="btn btn-sec flex-col h-24" data-ir="consultar"><i data-ico="search" class="!w-7 !h-7 text-vivo"></i>Consultar</button>
+          <button class="btn btn-sec flex-col h-24" data-ir="reportes"><i data-ico="chart" class="!w-7 !h-7 text-vivo"></i>Reportes</button>
+          <button class="btn btn-sec flex-col h-24" id="ini-respaldo" data-roles="Administrador,Operador"><i data-ico="shield" class="!w-7 !h-7 text-exito"></i>Respaldar</button>
+          <div class="col-span-2 text-xs text-muted flex items-center gap-2 mt-1"><i data-ico="clock" class="w-4 h-4"></i>Último respaldo: <b id="ini-ult-resp">nunca</b></div>
+          <div class="col-span-2 text-xs text-muted flex items-center gap-2" id="ini-pend-wrap"><i data-ico="alert" class="w-4 h-4 text-amber-500"></i><span><b id="ini-pend">0</b> registro(s) pendientes de digitalización</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header"><i data-ico="clock"></i>Últimos documentos cargados</div>
+      <div class="overflow-auto"><table class="tabla"><thead><tr><th>N° Registro</th><th>Documento</th><th>Dirección</th><th>Descripción</th><th>Fecha de carga</th><th>Estado</th></tr></thead>
+        <tbody id="ini-recientes"></tbody></table></div>
+    </div>
+  </section>
+
+  <!-- ===================== ESCANEAR Y CARGAR ===================== -->
+  <section id="vista-escanear" class="vista hidden space-y-5">
+    <div class="card"><div class="card-body py-5 px-8">
+      <div class="stepper" id="stepper">
+        <div class="paso" data-paso="1"><div class="paso-num">1</div><div class="paso-txt">Escanear</div></div>
+        <div class="paso-linea" data-linea="1"></div>
+        <div class="paso" data-paso="2"><div class="paso-num">2</div><div class="paso-txt">Vista Previa</div></div>
+        <div class="paso-linea" data-linea="2"></div>
+        <div class="paso" data-paso="3"><div class="paso-num">3</div><div class="paso-txt">Completar Datos</div></div>
+        <div class="paso-linea" data-linea="3"></div>
+        <div class="paso" data-paso="4"><div class="paso-num">4</div><div class="paso-txt">Guardar</div></div>
+      </div>
+    </div></div>
+
+    <!-- Paso 1 -->
+    <div id="paso-1" class="grid grid-cols-3 gap-5">
+      <div class="card col-span-2">
+        <div class="card-header"><i data-ico="scan"></i>Paso 1 · Conexión y Escaneo</div>
+        <div class="card-body space-y-5">
+          <div id="esc-estado" class="flex items-center gap-3 rounded-lg p-3 bg-surface2 border border-borde">
+            <span class="punto warn"></span><span class="text-sm">Verificando escáner...</span>
+            <button class="btn-ico ml-auto" id="esc-refrescar" title="Volver a detectar"><i data-ico="refresh"></i></button>
+          </div>
+          <div id="esc-zona" class="zona-drop p-8 flex flex-col items-center text-center gap-4">
+            <div class="w-20 h-20 rounded-full bg-blue-100 text-vivo grid place-items-center"><i data-ico="scan" class="w-10 h-10"></i></div>
+            <div><div class="font-semibold text-lg">Coloque el documento en el escáner</div>
+              <div class="text-sm text-muted">o importe un PDF / imagen (JPG, PNG, TIFF) desde su PC.</div></div>
+            <div class="flex gap-3">
+              <button class="btn btn-primario btn-lg" id="btn-iniciar-escaneo"><i data-ico="play"></i>Iniciar Escaneo</button>
+              <button class="btn btn-sec btn-lg" id="btn-importar"><i data-ico="folder"></i>Importar desde la PC</button>
+            </div>
+          </div>
+          <div id="esc-resultado" class="hidden">
+            <div class="flex gap-5 items-start">
+              <div class="w-44 flex-none rounded-lg border border-borde bg-surface2 p-2 grid place-items-center"><canvas id="esc-miniatura" class="shadow max-w-full"></canvas></div>
+              <div class="flex-1 space-y-4">
+                <div class="flex items-center gap-2 text-exito font-semibold"><i data-ico="check-circle" class="w-5 h-5"></i>Documento adquirido correctamente</div>
+                <div class="text-sm text-muted truncate">Origen: <span id="esc-origen"></span></div>
+                <div class="grid grid-cols-4 gap-3">
+                  <div class="metrica"><div class="v" id="m-paginas">0</div><div class="l">Páginas</div></div>
+                  <div class="metrica"><div class="v" id="m-formato">PDF</div><div class="l">Formato</div></div>
+                  <div class="metrica"><div class="v" id="m-tamano">0</div><div class="l">Tamaño (MB)</div></div>
+                  <div class="metrica"><div class="v text-exito" id="m-calidad">Óptima</div><div class="l">Calidad</div></div>
+                </div>
+                <div class="flex gap-3 flex-wrap">
+                  <button class="btn btn-sec" id="btn-agregar-escaneo"><i data-ico="plus"></i>Escanear otra página</button>
+                  <button class="btn btn-sec" id="btn-agregar-archivo"><i data-ico="folder"></i>Agregar archivo</button>
+                  <button class="btn btn-sec" id="btn-descartar"><i data-ico="trash"></i>Descartar</button>
+                  <button class="btn btn-primario ml-auto" id="btn-p1-continuar">Continuar<i data-ico="arrow-right"></i></button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><i data-ico="info"></i>Recomendaciones</div>
+        <div class="card-body text-sm space-y-3">
+          <div class="flex gap-3"><span class="chip">1</span><span>Retire ganchos, clips y broches del documento.</span></div>
+          <div class="flex gap-3"><span class="chip">2</span><span>Resolución sugerida: <b>200–300 DPI</b> (calidad óptima para archivo).</span></div>
+          <div class="flex gap-3"><span class="chip">3</span><span>Use <b>“Escanear otra página”</b> para documentos de varias hojas.</span></div>
+          <div class="flex gap-3"><span class="chip">4</span><span>Las imágenes JPG/PNG se convierten automáticamente a PDF.</span></div>
+          <div class="rounded-lg bg-surface2 border border-borde p-3 mt-2">
+            <div class="dato-k mb-1">Próximo N° de registro</div>
+            <div class="text-2xl font-bold text-vivo" id="esc-prox-reg">----</div>
+          </div>
+          <div class="rounded-lg bg-surface2 border border-borde p-3">
+            <div class="dato-k mb-1">Cargados en esta sesión</div>
+            <div class="text-2xl font-bold" id="esc-sesion-count">0</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Paso 2 -->
+    <div id="paso-2" class="hidden grid grid-cols-3 gap-5">
+      <div class="card col-span-2 flex flex-col" style="height:calc(100vh - 250px);min-height:520px">
+        <div class="card-header"><i data-ico="eye"></i>Paso 2 · Vista Previa del Documento</div>
+        <div id="visor-escaneo" class="flex-1 min-h-0 flex"></div>
+      </div>
+      <div class="card self-start">
+        <div class="card-header"><i data-ico="list"></i>Resumen de digitalización</div>
+        <div class="card-body space-y-3 text-sm">
+          <div class="flex justify-between border-b border-borde pb-2"><span class="text-muted">Páginas</span><b id="r-paginas"></b></div>
+          <div class="flex justify-between border-b border-borde pb-2"><span class="text-muted">Formato</span><b id="r-formato"></b></div>
+          <div class="flex justify-between border-b border-borde pb-2"><span class="text-muted">Tamaño</span><b id="r-tamano"></b></div>
+          <div class="flex justify-between border-b border-borde pb-2"><span class="text-muted">Resolución</span><b id="r-dpi"></b></div>
+          <div class="flex justify-between border-b border-borde pb-2"><span class="text-muted">Calidad</span><b id="r-calidad" class="text-exito"></b></div>
+          <div class="flex justify-between"><span class="text-muted">Origen</span><b id="r-origen" class="truncate max-w-[60%] text-right"></b></div>
+          <div class="rounded-lg bg-blue-50 text-marino p-3 text-xs flex gap-2 dark:bg-blue-900/30 dark:text-blue-200"><i data-ico="info" class="w-4 h-4 flex-none"></i>
+            Los botones de rotación modifican el PDF real que será archivado (página actual).</div>
+          <div class="flex gap-3 pt-2">
+            <button class="btn btn-sec flex-1" id="btn-p2-volver"><i data-ico="refresh"></i>Volver a Escanear</button>
+            <button class="btn btn-primario flex-1" id="btn-p2-continuar">Continuar<i data-ico="arrow-right"></i></button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Paso 3 -->
+    <div id="paso-3" class="hidden grid grid-cols-3 gap-5">
+      <div class="card col-span-2">
+        <div class="card-header"><i data-ico="edit"></i>Paso 3 · Completar Datos y Clasificar</div>
+        <form id="form-doc" class="card-body grid grid-cols-2 gap-x-5 gap-y-4" autocomplete="off" onsubmit="return false">
+          <div><label class="lbl">Dirección *</label><select class="inp" name="direccion_id" id="f-direccion"></select></div>
+          <div><label class="lbl">Tipo de Documento *</label><select class="inp" name="tipo_id" id="f-tipo"></select></div>
+          <div><label class="lbl">Número *</label><input class="inp" name="numero" id="f-numero" placeholder="Ej. 243/2026"></div>
+          <div><label class="lbl">Año *</label><input class="inp" name="anio" id="f-anio" type="number" min="1900" max="2100" placeholder="Ej. 2026"></div>
+          <div class="col-span-2"><label class="lbl">Descripción</label><textarea class="inp" name="descripcion" id="f-descripcion" placeholder="Breve descripción del contenido del documento"></textarea></div>
+          <div class="col-span-2"><label class="lbl">Ubicación Física</label><input class="inp" name="ubicacion_fisica" id="f-ubicacion" placeholder="Ej. Caja 4 - Carpeta Decretos" list="dl-ubicaciones"></div>
+          <div class="col-span-2">
+            <label class="lbl">Etiquetas</label>
+            <div class="inp flex flex-wrap gap-2 items-center min-h-[44px]" id="f-etiquetas-box">
+              <div id="f-etiquetas-chips" class="flex flex-wrap gap-2"></div>
+              <input id="f-etiqueta-input" class="flex-1 min-w-[160px] bg-transparent outline-none text-sm" placeholder="Escriba y presione Enter para agregar" list="dl-etiquetas">
+            </div>
+            <datalist id="dl-etiquetas"></datalist><datalist id="dl-ubicaciones"></datalist>
+          </div>
+          <div class="col-span-2 flex gap-3 justify-end pt-2 border-t border-borde">
+            <button type="button" class="btn btn-sec" id="btn-p3-cancelar"><i data-ico="x"></i>Cancelar</button>
+            <button type="button" class="btn btn-marino" id="btn-p3-guardar-continuar"><i data-ico="repeat"></i>Guardar y Continuar</button>
+            <button type="button" class="btn btn-exito" id="btn-p3-guardar"><i data-ico="save"></i>Guardar Documento</button>
+          </div>
+        </form>
+      </div>
+      <div class="card self-start">
+        <div class="card-header"><i data-ico="file"></i>Documento a archivar</div>
+        <div class="card-body space-y-3">
+          <div class="rounded-lg border border-borde bg-surface2 p-2 grid place-items-center"><canvas id="p3-miniatura" class="shadow max-w-full"></canvas></div>
+          <div class="text-sm space-y-1">
+            <div class="flex justify-between"><span class="text-muted">N° de registro asignado</span><b class="text-vivo" id="p3-registro"></b></div>
+            <div class="flex justify-between"><span class="text-muted">Páginas</span><b id="p3-paginas"></b></div>
+            <div class="flex justify-between"><span class="text-muted">Archivo destino</span></div>
+            <div class="text-xs font-mono bg-surface2 border border-borde rounded p-2 break-all" id="p3-destino">-</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Paso 4 -->
+    <div id="paso-4" class="hidden">
+      <div class="card max-w-3xl mx-auto">
+        <div class="card-header"><i data-ico="check-circle"></i>Paso 4 · Documento Guardado</div>
+        <div class="card-body flex flex-col items-center text-center gap-4 py-8">
+          <div class="exito-circ"><div><i data-ico="check"></i></div></div>
+          <div class="text-2xl font-bold">¡Documento archivado correctamente!</div>
+          <div class="text-muted">Número de registro asignado</div>
+          <div class="text-4xl font-extrabold tracking-wide text-vivo" id="p4-registro">----</div>
+          <div class="grid grid-cols-3 gap-4 w-full text-left mt-2 bg-surface2 border border-borde rounded-xl p-4">
+            <div><div class="dato-k">Documento</div><div class="dato-v" id="p4-doc"></div></div>
+            <div><div class="dato-k">Dirección</div><div class="dato-v" id="p4-dir"></div></div>
+            <div><div class="dato-k">Fecha de carga</div><div class="dato-v" id="p4-fecha"></div></div>
+            <div class="col-span-3"><div class="dato-k">Archivo</div><div class="dato-v font-mono text-xs" id="p4-archivo"></div></div>
+          </div>
+          <div class="flex gap-3 mt-3">
+            <button class="btn btn-marino btn-lg" id="btn-p4-comprobante"><i data-ico="printer"></i>Imprimir Comprobante</button>
+            <button class="btn btn-sec btn-lg" id="btn-p4-ver"><i data-ico="external"></i>Ver Documento</button>
+            <button class="btn btn-exito btn-lg" id="btn-p4-finalizar"><i data-ico="check"></i>Finalizar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== CONSULTAR ===================== -->
+  <section id="vista-consultar" class="vista hidden space-y-5">
+    <div class="card">
+      <div class="card-header"><i data-ico="filter"></i>Filtros de búsqueda</div>
+      <form id="form-consulta" class="card-body grid grid-cols-8 gap-3 items-end" onsubmit="return false">
+        <div class="col-span-1"><label class="lbl">N° de Registro</label><input class="inp" name="registro" placeholder="2026-000245"></div>
+        <div class="col-span-2"><label class="lbl">Descripción / palabras clave</label><input class="inp" name="texto" placeholder="Ej. habilitación comercial"></div>
+        <div><label class="lbl">Dirección</label><select class="inp" name="direccion_id" id="c-direccion"></select></div>
+        <div><label class="lbl">Tipo de Documento</label><select class="inp" name="tipo_id" id="c-tipo"></select></div>
+        <div><label class="lbl">Año</label><select class="inp" name="anio" id="c-anio"></select></div>
+        <div><label class="lbl">Fecha desde</label><input class="inp" type="date" name="desde"></div>
+        <div><label class="lbl">Fecha hasta</label><input class="inp" type="date" name="hasta"></div>
+        <div class="col-span-8 flex gap-3 items-center">
+          <span class="text-sm text-muted"><b id="c-cantidad" class="text-texto">0</b> documento(s) encontrados · búsqueda en tiempo real</span>
+          <button type="button" class="btn btn-sec ml-auto" id="c-limpiar"><i data-ico="x"></i>Limpiar</button>
+          <button type="button" class="btn btn-primario" id="c-buscar"><i data-ico="search"></i>Buscar</button>
+        </div>
+      </form>
+    </div>
+    <div class="grid grid-cols-12 gap-5">
+      <div class="col-span-8 space-y-5 min-w-0">
+        <div class="card">
+          <div class="card-header"><i data-ico="list"></i>Resultados</div>
+          <div class="overflow-auto" style="max-height:calc(100vh - 560px);min-height:240px">
+            <table class="tabla"><thead><tr><th>N° Registro</th><th>Documento</th><th>Dirección</th><th>Año</th><th>Fecha de Carga</th><th class="text-right">Acciones</th></tr></thead>
+              <tbody id="c-resultados"></tbody></table>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-header"><i data-ico="info"></i>Metadatos del documento</div>
+          <div class="card-body" id="c-metadatos"><div class="text-muted text-sm">Seleccione un documento de la lista para ver sus datos.</div></div>
+        </div>
+      </div>
+      <div class="card col-span-4 flex flex-col" style="height:calc(100vh - 330px);min-height:520px">
+        <div class="card-header"><i data-ico="eye"></i>Vista Previa <span id="c-prev-titulo" class="ml-auto text-xs font-normal text-blue-200"></span></div>
+        <div id="visor-consulta" class="flex-1 min-h-0 flex"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== REPORTES ===================== -->
+  <section id="vista-reportes" class="vista hidden space-y-5">
+    <div class="card"><div class="card-body flex flex-wrap gap-3 items-end">
+      <div class="w-48"><label class="lbl">Período</label><select class="inp" id="r-periodo">
+        <option value="todo">Todo el historial</option><option value="mes">Este mes</option><option value="30d">Últimos 30 días</option>
+        <option value="trimestre">Últimos 3 meses</option><option value="anio">Este año</option><option value="anio_anterior">Año anterior</option></select></div>
+      <div class="w-52"><label class="lbl">Dirección</label><select class="inp" id="r-direccion"></select></div>
+      <div class="w-52"><label class="lbl">Tipo de Documento</label><select class="inp" id="r-tipo"></select></div>
+      <div class="ml-auto flex gap-2">
+        <button class="btn btn-peligro" id="r-exp-pdf"><i data-ico="file"></i>Exportar PDF</button>
+        <button class="btn btn-exito" id="r-exp-xlsx"><i data-ico="table"></i>Exportar Excel</button>
+        <button class="btn btn-primario" id="r-exp-png"><i data-ico="image"></i>Exportar Imagen</button>
+      </div>
+    </div></div>
+    <div class="grid grid-cols-4 gap-5">
+      <div class="kpi"><div class="kpi-ico bg-blue-100 text-vivo"><i data-ico="files"></i></div><div><div class="kpi-val" id="k-total">0</div><div class="kpi-lbl">Total de Documentos Digitalizados</div></div></div>
+      <div class="kpi"><div class="kpi-ico bg-emerald-100 text-exito"><i data-ico="trending"></i></div><div class="flex-1"><div class="kpi-val" id="k-tasa">0%</div><div class="kpi-lbl">Tasa de Digitalización</div>
+        <div class="h-1.5 rounded bg-borde mt-1.5 overflow-hidden"><div id="k-tasa-bar" class="h-full bg-exito" style="width:0"></div></div></div></div>
+      <div class="kpi"><div class="kpi-ico bg-violet-100 text-violet-600"><i data-ico="building"></i></div><div><div class="kpi-val" id="k-dirs">0</div><div class="kpi-lbl">Direcciones Registradas</div></div></div>
+      <div class="kpi"><div class="kpi-ico bg-amber-100 text-amber-600"><i data-ico="clock"></i></div><div class="min-w-0"><div class="kpi-val !text-xl" id="k-ultima">-</div><div class="kpi-lbl truncate">Última Carga · <span id="k-ultimo-reg"></span></div></div></div>
+    </div>
+    <div class="grid grid-cols-5 gap-5">
+      <div class="card col-span-3"><div class="card-header"><i data-ico="chart"></i>Documentos por Dirección</div><div class="card-body h-80"><canvas id="g-barras"></canvas></div></div>
+      <div class="card col-span-2"><div class="card-header"><i data-ico="pie"></i>Tipos de Documentos</div><div class="card-body h-80"><canvas id="g-torta"></canvas></div></div>
+    </div>
+    <div class="card">
+      <div class="card-header"><i data-ico="clock"></i>Actividad Reciente</div>
+      <div class="overflow-auto"><table class="tabla"><thead><tr><th>N° Registro</th><th>Documento</th><th>Dirección</th><th>Descripción</th><th>Usuario</th><th>Fecha de carga</th></tr></thead>
+        <tbody id="r-actividad"></tbody></table></div>
+    </div>
+  </section>
+
+  <!-- ===================== CONFIGURACIÓN ===================== -->
+  <section id="vista-configuracion" class="vista hidden space-y-5">
+    <div class="card">
+      <div class="tabs px-4 pt-2" id="cfg-tabs">
+        <button class="tab activo" data-tab="usuarios"><i data-ico="users"></i>Gestión de Usuarios</button>
+        <button class="tab" data-tab="categorias"><i data-ico="tags"></i>Categorías Documentales</button>
+        <button class="tab" data-tab="respaldo"><i data-ico="shield"></i>Respaldo y Seguridad</button>
+        <button class="tab" data-tab="preferencias"><i data-ico="sliders"></i>Preferencias</button>
+      </div>
+
+      <div class="card-body" data-panel="usuarios">
+        <div class="flex items-center mb-4"><div><div class="font-semibold">Usuarios del sistema</div><div class="text-sm text-muted">Roles: Administrador (control total), Operador (carga y respaldo), Consulta (sólo lectura).</div></div>
+          <button class="btn btn-primario ml-auto" id="u-nuevo"><i data-ico="user-plus"></i>Nuevo usuario</button></div>
+        <table class="tabla"><thead><tr><th>Usuario</th><th>Nombre</th><th>Rol</th><th>Estado</th><th>Creado</th><th class="text-right">Acciones</th></tr></thead><tbody id="u-lista"></tbody></table>
+      </div>
+
+      <div class="card-body hidden grid grid-cols-2 gap-6" data-panel="categorias">
+        <div>
+          <div class="flex items-center mb-3"><div class="font-semibold flex items-center gap-2"><i data-ico="building" class="w-5 h-5 text-vivo"></i>Direcciones</div>
+            <button class="btn btn-primario ml-auto" data-nueva-cat="direcciones"><i data-ico="plus"></i>Agregar</button></div>
+          <div class="border border-borde rounded-lg overflow-auto max-h-[60vh]"><table class="tabla"><thead><tr><th>Nombre</th><th>Estado</th><th class="text-right">Acciones</th></tr></thead><tbody id="cat-direcciones"></tbody></table></div>
+        </div>
+        <div>
+          <div class="flex items-center mb-3"><div class="font-semibold flex items-center gap-2"><i data-ico="file" class="w-5 h-5 text-vivo"></i>Tipos de Documento</div>
+            <button class="btn btn-primario ml-auto" data-nueva-cat="tipos"><i data-ico="plus"></i>Agregar</button></div>
+          <div class="border border-borde rounded-lg overflow-auto max-h-[60vh]"><table class="tabla"><thead><tr><th>Nombre</th><th>Estado</th><th class="text-right">Acciones</th></tr></thead><tbody id="cat-tipos"></tbody></table></div>
+        </div>
+      </div>
+
+      <div class="card-body hidden space-y-5" data-panel="respaldo">
+        <div class="grid grid-cols-3 gap-5">
+          <div class="col-span-2 rounded-xl border border-borde bg-surface2 p-5 flex items-center gap-5">
+            <div class="w-16 h-16 rounded-full bg-emerald-100 text-exito grid place-items-center flex-none"><i data-ico="shield" class="w-8 h-8"></i></div>
+            <div class="flex-1"><div class="font-semibold text-lg">Respaldo completo del sistema</div>
+              <div class="text-sm text-muted">Empaqueta la base de datos SQLite y todos los PDF del repositorio en un archivo <b>.zip</b> con fecha y hora en <span class="font-mono text-xs" id="resp-ruta">datos_sistema/backups/</span></div></div>
+            <button class="btn btn-exito btn-lg" id="btn-respaldo"><i data-ico="download"></i>Realizar respaldo ahora</button>
+          </div>
+          <div class="rounded-xl border border-borde p-5 space-y-2 text-sm">
+            <div class="font-semibold mb-1">Seguridad</div>
+            <div class="flex gap-2"><i data-ico="lock" class="w-4 h-4 text-exito"></i>Servidor local sólo en 127.0.0.1</div>
+            <div class="flex gap-2"><i data-ico="lock" class="w-4 h-4 text-exito"></i>Acceso a PDF protegido por token de sesión</div>
+            <div class="flex gap-2"><i data-ico="lock" class="w-4 h-4 text-exito"></i>Contraseñas con PBKDF2-SHA256</div>
+            <button class="btn btn-sec w-full mt-2" id="btn-abrir-backups"><i data-ico="folder"></i>Abrir carpeta de respaldos</button>
+          </div>
+        </div>
+        <div><div class="font-semibold mb-2">Historial de respaldos</div>
+          <div class="border border-borde rounded-lg overflow-auto max-h-[45vh]"><table class="tabla"><thead><tr><th>Fecha</th><th>Archivo</th><th>Tamaño</th><th>Documentos</th><th>Usuario</th><th>Estado</th></tr></thead><tbody id="resp-lista"></tbody></table></div></div>
+      </div>
+
+      <div class="card-body hidden" data-panel="preferencias">
+        <div class="max-w-2xl divide-y divide-[var(--c-borde)]">
+          <div class="flex items-center gap-4 py-4"><div class="w-10 h-10 rounded-lg bg-blue-100 text-vivo grid place-items-center"><i data-ico="moon" class="w-5 h-5"></i></div>
+            <div class="flex-1"><div class="font-semibold">Modo Oscuro</div><div class="text-sm text-muted">Alterna entre el tema claro institucional y el tema oscuro.</div></div>
+            <label class="switch"><input type="checkbox" id="pref-tema"><span></span></label></div>
+          <div class="flex items-center gap-4 py-4"><div class="w-10 h-10 rounded-lg bg-emerald-100 text-exito grid place-items-center"><i data-ico="bell" class="w-5 h-5"></i></div>
+            <div class="flex-1"><div class="font-semibold">Notificaciones</div><div class="text-sm text-muted">Mostrar avisos emergentes de confirmación (los errores siempre se muestran).</div></div>
+            <label class="switch"><input type="checkbox" id="pref-notif"><span></span></label></div>
+          <div class="flex items-center gap-4 py-4"><div class="w-10 h-10 rounded-lg bg-violet-100 text-violet-600 grid place-items-center"><i data-ico="calendar" class="w-5 h-5"></i></div>
+            <div class="flex-1"><div class="font-semibold">Formato de fecha</div><div class="text-sm text-muted">Formato utilizado en pantallas, comprobantes y reportes.</div></div>
+            <select class="inp !w-44" id="pref-fecha"><option>DD/MM/AAAA</option><option>DD-MM-AAAA</option><option>AAAA-MM-DD</option></select></div>
+          <div class="py-4 text-sm text-muted">Carpeta de datos: <span class="font-mono text-xs" id="pref-datos"></span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+  </main>
+</div>
+
+<div id="toasts"></div>
+<div id="modal-raiz"></div>
+<div id="cargando"><div class="flex flex-col items-center gap-3 text-white font-semibold"><div class="spinner"></div><span id="cargando-txt">Procesando...</span></div></div>
+
+<script src="/static/vendor/chart.umd.min.js"></script>
+<script src="/static/vendor/pdf.min.js"></script>
+<script src="/static/js/iconos.js"></script>
+<script src="/static/js/api.js"></script>
+<script src="/static/js/visor.js"></script>
+<script src="/static/js/app.js"></script>
+<script src="/static/js/inicio.js"></script>
+<script src="/static/js/escanear.js"></script>
+<script src="/static/js/consultar.js"></script>
+<script src="/static/js/reportes.js"></script>
+<script src="/static/js/configuracion.js"></script>
+</body>
+</html>
