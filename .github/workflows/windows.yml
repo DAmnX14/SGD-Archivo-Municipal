@@ -45,10 +45,19 @@ jobs:
         shell: pwsh
         run: |
           $env:SGD_DATOS = Join-Path $env:RUNNER_TEMP "sgd_src"
-          $p = Start-Process -FilePath python -ArgumentList "app.py","--autoprueba" -PassThru
+          $p = Start-Process -FilePath python -ArgumentList "app.py","--autoprueba" -PassThru `
+                -RedirectStandardError nativo_err.txt -RedirectStandardOutput nativo_out.txt
           $fin = $p.WaitForExit(150000)
-          if (-not $fin) { $p.Kill() }
+          if (-not $fin) { $p.Kill() } else { Write-Host "Código de salida: $($p.ExitCode)" }
           Get-Content (Join-Path $env:SGD_DATOS "autoprueba.log") -ErrorAction SilentlyContinue | Select-Object -Last 120
+          Write-Host "---- stderr nativo ----"; Get-Content nativo_err.txt -ErrorAction SilentlyContinue | Select-Object -Last 80
+          Write-Host "---- stdout nativo ----"; Get-Content nativo_out.txt -ErrorAction SilentlyContinue | Select-Object -Last 40
+          Write-Host "---- Visor de eventos (Application, errores recientes) ----"
+          Get-WinEvent -FilterHashtable @{LogName='Application'; Level=1,2; StartTime=(Get-Date).AddMinutes(-5)} -ErrorAction SilentlyContinue |
+            Select-Object -First 6 | ForEach-Object { "[$($_.ProviderName)] $($_.Message)" }
+          Write-Host "---- WebView2 Runtime ----"
+          Get-ItemProperty "HKLM:\SOFTWARE\WOW6432Node\Microsoft\EdgeUpdate\Clients\{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}" -ErrorAction SilentlyContinue | Select-Object pv, name
+          pip show pywebview pythonnet | Select-String "Name|Version"
           $json = Join-Path $env:SGD_DATOS "autoprueba.json"
           if (-not $fin -or -not (Test-Path $json)) { throw "La autoprueba desde el código no terminó" }
           Get-Content $json -Raw
