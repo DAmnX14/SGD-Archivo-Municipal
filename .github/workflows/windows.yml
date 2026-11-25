@@ -84,6 +84,22 @@ jobs:
           if (-not (Get-Content $json -Raw | ConvertFrom-Json).ok) { throw "La autoprueba de la interfaz falló" }
           Write-Host "PDF de ejemplo generados:" (Get-ChildItem (Join-Path $env:SGD_DATOS "repositorio_pdf") -Recurse -Filter *.pdf).Count
 
+      - name: Diagnóstico con consola (si falla la autoprueba del .exe)
+        if: failure()
+        shell: pwsh
+        run: |
+          pyinstaller --noconfirm --onefile --console --name "SGD_debug" --distpath dist_debug `
+            --add-data "templates;templates" --add-data "static;static" `
+            --hidden-import pythoncom --hidden-import pywintypes --hidden-import win32com.client `
+            --collect-data reportlab app.py | Out-Null
+          $env:SGD_DATOS = Join-Path $env:RUNNER_TEMP "sgd_debug"
+          $p = Start-Process -FilePath "dist_debug\SGD_debug.exe" -ArgumentList "--autoprueba" -PassThru `
+                -RedirectStandardError dbg_err.txt -RedirectStandardOutput dbg_out.txt
+          if (-not $p.WaitForExit(150000)) { $p.Kill(); Write-Host "TIMEOUT" } else { Write-Host "Salida: $($p.ExitCode)" }
+          Write-Host "---- stderr ----"; Get-Content dbg_err.txt -ErrorAction SilentlyContinue | Select-Object -Last 80
+          Write-Host "---- stdout ----"; Get-Content dbg_out.txt -ErrorAction SilentlyContinue | Select-Object -Last 40
+          Write-Host "---- log ----"; Get-Content (Join-Path $env:SGD_DATOS "autoprueba.log") -ErrorAction SilentlyContinue | Select-Object -Last 80
+
       - name: Guardar diagnóstico
         if: failure()
         uses: actions/upload-artifact@v4

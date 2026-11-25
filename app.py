@@ -29,6 +29,12 @@ from datetime import datetime, timedelta
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, unquote, urlparse
 
+# En el .exe sin consola (--windowed) stdout/stderr son None: algunas librerías fallan al escribir.
+if sys.stdout is None or sys.stderr is None:
+    _nulo = open(os.devnull, "w", encoding="utf-8")
+    sys.stdout = sys.stdout or _nulo
+    sys.stderr = sys.stderr or _nulo
+
 import database as dbm
 import export_utils as exp
 import scanner_utils as scn
